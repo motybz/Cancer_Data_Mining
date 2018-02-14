@@ -3,7 +3,7 @@ from sklearn import datasets
 import numpy as np
 # import pandas as pd
 def load_dataset(source_file = ''):
-    with open(source_file) as f:
+    with open(source_file,"r") as f:
         data = f.readlines()[1]
         data = data.split(',')
         ncols = len(data)
