@@ -3,7 +3,7 @@ files:
     test_set:
 
 #from this list: http://scikit-learn.org/stable/modules/model_evaluation.html
-score: roc_auc
+score: accuracy
 
 #from this list:
 #TODO
