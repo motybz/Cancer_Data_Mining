@@ -1,9 +1,11 @@
 files:
-    train_set: C:/Users/motibz/Documents/Studing/Cancer_Data_Mining/data_sets/02_18_train/02_18_train/BEST_my_changes_train.csv
+#    train_set: C:/Users/motibz/Documents/Studing/Cancer_Data_Mining/data_sets/02_18_train/02_18_train/best_fixed_train.csv
+    train_set: C:/Users/motibz/Documents/Studing/Cancer_Data_Mining/data_sets/02_18_train/02_18_train/spit_fixed.csv
     test_set:
+#    test_set: C:/Users/motibz/Documents/Studing/Cancer_Data_Mining/data_sets/02_18_train/02_18_train/spit_fixed.csv
 
 #from this list: http://scikit-learn.org/stable/modules/model_evaluation.html
-score: accuracy
+score: roc_auc
 
 #from this list:
 #TODO
