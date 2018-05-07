@@ -1,4 +1,4 @@
-import os ,yaml,sys
+import os ,yaml,sys ,pickle
 # import pandas as pd
 from operator import itemgetter
 from tools.import_data import *
@@ -12,6 +12,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
 from sklearn import feature_selection as fs
 
 # consts
@@ -22,8 +23,10 @@ TRAIN_FILE = config['files']['train_set']
 TEST_FILE = config['files']['test_set']
 SCORING = config['score']
 
+# TODO get model by name
 models = []
 
+# models.append(('MLP', MLPClassifier()))
 models.append(('LR', LogisticRegression()))
 # models.append(('LDA', LinearDiscriminantAnalysis()))
 # models.append(('KNN', KNeighborsClassifier()))
@@ -59,15 +62,17 @@ class TrainedModel:
         self.test_score = test_the_data(self.test_set.X, self.test_set.Y, self.fited_model)
         return self.test_score
 
-    # def set_chosen_model(self, name, fited_model):
-    #     self.chosen_model = SkFModel(name, fited_model)
-
     def train_model(self):
         clf = self.chosen_model.skmodel
         clf.fit(self.train_set.X, self.train_set.Y)
         self.fited_model = clf
 
-
+    def save_traind_model_to_file(self,outdir):
+        print('Saving model {} with {} features to file...'.format(self.chosen_model.name,len(self.train_set.feature_list)))
+        filename = '{}_{}_features.sav'.format(self.chosen_model.name,len(self.train_set.feature_list))
+        outdir = os.path.join(outdir,filename)
+        pickle.dump(model, open(outdir, 'wb'))
+        print('File ready here {}'.format(outdir))
 
 def pre_processing(X_set, Y_set ,encoders=None):
     # Data pre processing
@@ -127,12 +132,13 @@ def get_models_CV_scores(X_train, Y_train, models):
             names.append(name)
             results.append({"model": SkFModel(name, model), "score": cv_results.mean()})
     # Compare Algorithms
-    # fig = plt.figure()
-    # fig.suptitle('Algorithm Comparison')
-    # ax = fig.add_subplot(111)
-    # plt.boxplot(scores)
-    # ax.set_xticklabels(names)
-    # plt.show()
+    if config['outputs']['show_charts']:
+        fig = plt.figure()
+        fig.suptitle('Algorithm Comparison')
+        ax = fig.add_subplot(111)
+        plt.boxplot(scores)
+        ax.set_xticklabels(names)
+        plt.show()
     return results
 
 def test_the_data(X_test, Y_test, fited_model):
@@ -180,6 +186,7 @@ if __name__ == "__main__":
     new_tests = []
     myrange = np.arange(0.01, 1, 0.01)
     for VTHRESH in myrange:
+        # TODO fit it once and use again and again
         sel = fs.SelectPercentile(score_func=fs.mutual_info_classif, percentile=VTHRESH * 100)
         sel.fit(X_train, Y_train)
         X_train_mod = sel.transform(X_train)
@@ -230,11 +237,11 @@ if __name__ == "__main__":
 
         for model in train_results:
             print(model['model'].name, model['score'])
-
-    plt.plot([d.ratio for d in new_trains],
-             [d.train_score for d in best_traind_models])
-    plt.legend()
-    plt.show()
+    if config['outputs']['show_charts']:
+        plt.plot([d.ratio for d in new_trains],
+                 [d.train_score for d in best_traind_models])
+        plt.legend()
+        plt.show()
 
     sorted_reasultes = sorted(best_traind_models,key=lambda x: x.train_score)
     for best in sorted_reasultes:
@@ -242,13 +249,22 @@ if __name__ == "__main__":
                                                                                                    best.chosen_model.name,
                                                                                                    best.train_score,
                                                                                                    best.train_set.feature_list))
-    # need to modify the test shape
     print("**Testing Section:**")
     for trained_model in best_traind_models:
-        print('Testing {} on {} with the model {}'.format(trained_model.train_set.X.shape,
-                                                          trained_model.test_set.X.shape,
-                                                          trained_model.chosen_model.name)
-              )
         trained_model.train_model()
         trained_model.test_the_model()
-        print ('Score - {}'.format(trained_model.test_score))
+
+    sorted_reasultes = sorted(best_traind_models, key=lambda x: x.test_score)
+    for reasulte in sorted_reasultes:
+        print('Testing {} on {} with the model {}'.format(reasulte.train_set.X.shape,
+                                                          reasulte.test_set.X.shape,
+                                                          reasulte.chosen_model.name))
+        print('Score - {}'.format(reasulte.test_score))
+
+    #save trained model to files
+    #https://machinelearningmastery.com/save-load-machine-learning-models-python-scikit-learn/
+    if config['outputs']['save_models_agenda'] == 'all':
+        for model in sorted_reasultes:
+            model.save_traind_model_to_file(config['outputs']['outdir'])
+    elif config['outputs']['save_models_agenda'] == 'best':
+        sorted_reasultes[-1].save_traind_model_to_file(config['outputs']['outdir'])

@@ -6,8 +6,40 @@ files:
 #from this list: http://scikit-learn.org/stable/modules/model_evaluation.html
 score: roc_auc
 
-#from this list:
+outputs:
+  show_charts: True
+  save_models_agenda: best # all/best/none
+  outdir: C:/Users/motibz/Documents/Studing/
+
 #TODO
+# http://scikit-learn.org/stable/tutorial/machine_learning_map/index.html
 models:
-  - first
-  - second
+  -AdaBoostClassifier
+  -BaggingClassifier
+  -BayesianGaussianMixture
+  -BernoulliNB
+  -CalibratedClassifierCV
+  -DPGMM
+  -DecisionTreeClassifier
+  -ExtraTreeClassifier
+  -ExtraTreesClassifier
+  -GMM
+  -GaussianMixture
+  -GaussianNB
+  -GaussianProcessClassifier
+  -GradientBoostingClassifier
+  -KNeighborsClassifier
+  -LabelPropagation
+  -LabelSpreading
+  -LinearDiscriminantAnalysis
+  -LogisticRegression
+  -LogisticRegressionCV
+  -MLPClassifier
+  -MultinomialNB
+  -NuSVC
+  -QuadraticDiscriminantAnalysis
+  -RandomForestClassifier
+  -SGDClassifier
+  -SVC
+  -VBGMM
+
