@@ -1,4 +1,5 @@
-import os ,yaml
+import os ,yaml,sys
+# import pandas as pd
 from operator import itemgetter
 from tools.import_data import *
 import matplotlib.pyplot as plt
@@ -24,18 +25,19 @@ SCORING = config['score']
 models = []
 
 models.append(('LR', LogisticRegression()))
-models.append(('LDA', LinearDiscriminantAnalysis()))
-models.append(('KNN', KNeighborsClassifier()))
-models.append(('CART', DecisionTreeClassifier()))
-models.append(('NB', GaussianNB()))
-models.append(('SVM', SVC()))
+# models.append(('LDA', LinearDiscriminantAnalysis()))
+# models.append(('KNN', KNeighborsClassifier()))
+# models.append(('CART', DecisionTreeClassifier()))
+# models.append(('NB', GaussianNB()))
+# models.append(('SVM', SVC()))
 
 # Classes
 class DataSet:
-    def __init__(self, X, Y, feature_list, threshold=None, ratio=None):
+    def __init__(self, X, Y, feature_list,encoding_dict, threshold=None, ratio=None):
         self.X = X
         self.Y = Y
         self.feature_list = feature_list
+        self.encoding = encoding_dict # {feature_name: encoder}
         self.threshold = threshold
         self.ratio = ratio
 
@@ -57,44 +59,60 @@ class TrainedModel:
         self.test_score = test_the_data(self.test_set.X, self.test_set.Y, self.fited_model)
         return self.test_score
 
-    def set_chosen_model(self, name, fited_model):
-        self.chosen_model = SkFModel(name, fited_model)
+    # def set_chosen_model(self, name, fited_model):
+    #     self.chosen_model = SkFModel(name, fited_model)
 
     def train_model(self):
         clf = self.chosen_model.skmodel
         clf.fit(self.train_set.X, self.train_set.Y)
         self.fited_model = clf
 
-    # def fit_the_model(self):
-    #     self.fited_model = self.train_model(X_train, Y_train, self.model)
 
 
-def pre_processing(X_set, Y_set):
+def pre_processing(X_set, Y_set ,encoders=None):
     # Data pre processing
     # Encoding Categorial features and imputing NaN's
     # https://chrisalbon.com/machine_learning/preprocessing_structured_data/convert_pandas_categorical_column_into_integers_for_scikit-learn/
     # http://pbpython.com/categorical-encoding.html
     # https://datascience.stackexchange.com/questions/14069/mass-convert-categorical-columns-in-pandas-not-one-hot-encoding
-    char_cols = X_set.dtypes.pipe(lambda x: x[x == 'object']).index
-    if not char_cols.empty:
-        label_mapping = {}
-        for c in char_cols:
-            original_X_set = X_set.copy()
-            X_set[c], label_mapping[c] = pd.factorize(X_set[c])
+
+    # String categories to int
+    if encoders:
+        for feature, le in encoders.items():
+            if feature in X_set.columns:
+                X_set[feature][pd.isnull(X_set[feature])] = 'NaN'
+                X_set[feature] = le.transform(X_set[feature])
+            elif Y_set.name == feature:
+                Y_set = le.transform(Y_set)
+    else:
+        char_cols = X_set.dtypes.pipe(lambda x: x[x == 'object']).index
+        encoders = {}
+        for feature in char_cols:
+            # https://stackoverflow.com/questions/36808434/label-encoder-encoding-missing-values
+            X_set[feature][pd.isnull(X_set[feature])] = 'NaN'
+            le = preprocessing.LabelEncoder()
+            le.fit(X_set[feature])
+            X_set[feature] = le.transform(X_set[feature])
+            encoders.update({feature:le})
+        # Also for Y set
+        if Y_set.dtype == 'object':
+            le = preprocessing.LabelEncoder()
+            le.fit(Y_set)
+            encoders.update({Y_set.name: le})
+            Y_set = le.transform(Y_set).ravel()
+    #NaN to mean
+
+    # TODO choose the strategy
     imp = preprocessing.Imputer(axis=0, verbose=1)
     imp = imp.fit(X_set)
     X_set = imp.transform(X_set)
 
-    lb = preprocessing.LabelBinarizer()
-    Y_set = lb.fit_transform(Y_set).ravel()
-
     print('Pre processing results: X_set-{} Y_set-{}'.format(X_set.shape, Y_set.shape))
-    return X_set, Y_set
+    return X_set, Y_set , encoders
 
 def get_models_CV_scores(X_train, Y_train, models):
     # Spot Check Algorithms with cross validation
     # evaluate each model in turn
-
     scores = []
     names = []
     results = []
@@ -119,15 +137,7 @@ def get_models_CV_scores(X_train, Y_train, models):
 
 def test_the_data(X_test, Y_test, fited_model):
     # Make predictions on test dataset
-    # results = []
-    # for name, model in models:
-    #     model.fit(X_train, Y_train)
-    #     predictions = model.predict(X_test)
-    #     results.append({"model":(name,model),"score":roc_auc_score(Y_test, predictions)})
-    # return results
-    # predictions = fited_model.predict(X_test)
     scores = []
-    # for scoring_method in SCORING:
     scorer = get_scorer(SCORING)
     score = scorer(fited_model,X_test, Y_test)
     scores.append(score)
@@ -148,13 +158,13 @@ if __name__ == "__main__":
     data_sets.append({'X_train': X_train, 'Y_train': Y_train, 'original_headers_train': original_headers_train})
     print('Train data shape: ', X_train.shape)
     print('Train labels shape: ', Y_train.shape)
-    X_train, Y_train = pre_processing(X_train, Y_train)
+    X_train, Y_train ,encoders = pre_processing(X_train, Y_train)
     if TEST_FILE:
         X_test, Y_test, original_headers_test = load_dataset(TEST_FILE)
         data_sets.append({'X_test': X_test, 'Y_test': Y_test, 'original_headers_test': original_headers_test})
         print('Test data shape: ', X_test.shape)
         print('Test labels shape: ', Y_test.shape)
-        X_test, Y_test = pre_processing(X_test, Y_test)
+        X_test, Y_test, encoders = pre_processing(X_test, Y_test ,encoders)
 
     #create feature score list
     fs_scores = fs.mutual_info_classif(X_train,Y_train)
@@ -177,20 +187,26 @@ if __name__ == "__main__":
             if new_trains[-1].ratio == X_train_mod.shape[-1] / X_train.shape[-1]:
                 continue
         mask = sel.get_support()  # list of booleans
-        new_features = []  # The list of your K best features
+        sliced_features = []  # The list of the sliced K best features
+        sliced_encoders = {}  # The list of the sliced encoders
         for ans, feature in zip(mask, original_headers_train):
             if ans:
-                new_features.append(feature)
-        new_trains.append(DataSet(X_train_mod,Y_train,new_features, VTHRESH,
+                sliced_features.append(feature)
+                if feature in encoders.keys():
+                    sliced_encoders.update({feature:encoders[feature]})
+        new_trains.append(DataSet(X_train_mod,Y_train,sliced_features,sliced_encoders, VTHRESH,
                                   X_train_mod.shape[-1] / X_train.shape[-1],)
                               )
         if TEST_FILE:
-            new_test_features = []  # The list of your K best features
+            sliced_features = []  # The list of the sliced K best features
+            sliced_encoders = {}  # The list of the sliced encoders
             for ans, feature in zip(mask, original_headers_test):
                 if ans:
-                    new_test_features.append(feature)
+                    sliced_features.append(feature)
+                    if feature in encoders.keys():
+                        sliced_encoders.update({feature: encoders[feature]})
             X_test_mod = sel.transform(X_test)
-            new_tests.append(DataSet(X_test_mod,Y_test,new_test_features, VTHRESH,
+            new_tests.append(DataSet(X_test_mod,Y_test,sliced_features,sliced_encoders, VTHRESH,
                                      X_test_mod.shape[-1] / X_test.shape[-1],)
                               )
 
