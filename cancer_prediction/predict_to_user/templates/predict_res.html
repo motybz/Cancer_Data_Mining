@@ -1,0 +1,5 @@
+{% if predict_res %}
+  {% for key, value in predict_res.items %}
+      <li>{{key}} - {{value}}</li>
+  {% endfor %}
+{% endif %}

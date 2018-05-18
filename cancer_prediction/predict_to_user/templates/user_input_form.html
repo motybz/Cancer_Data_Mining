@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    {# Load the tag library #}
+    {% load bootstrap3 %}
+
+    {# Load CSS and JavaScript #}
+    {% bootstrap_css %}
+    {% bootstrap_javascript jquery=1 %}
+    {% load static %}
+    <script src="{% static 'user_form.js' %}"></script>
+
+    {# Display django.contrib.messages as Bootstrap alerts #}
+    {% bootstrap_messages %}
+</head>
+<body>
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-12 text-center">
+          <h1 class="mt-5">Cancer Prediction System</h1>
+                {% load crispy_forms_tags %}
+                {% crispy form %}
+        </div>
+      </div>
+    </div>
+    {% include "predict_modal.html" %}
+</body>
+</html>

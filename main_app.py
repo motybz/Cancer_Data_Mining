@@ -1,18 +1,10 @@
-import os ,yaml,sys ,pickle
-# import pandas as pd
+import os ,yaml,sys
+
 from operator import itemgetter
 from tools.import_data import *
 import matplotlib.pyplot as plt
 from sklearn import model_selection
-from sklearn import preprocessing
-from sklearn.metrics import *
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.naive_bayes import GaussianNB
-from sklearn.svm import SVC
-from sklearn.neural_network import MLPClassifier
+from shared_parameters import *
 from sklearn import feature_selection as fs
 
 # consts
@@ -34,86 +26,7 @@ models.append(('LR', LogisticRegression()))
 # models.append(('NB', GaussianNB()))
 # models.append(('SVM', SVC()))
 
-# Classes
-class DataSet:
-    def __init__(self, X, Y, feature_list,encoding_dict, threshold=None, ratio=None):
-        self.X = X
-        self.Y = Y
-        self.feature_list = feature_list
-        self.encoding = encoding_dict # {feature_name: encoder}
-        self.threshold = threshold
-        self.ratio = ratio
 
-class SkFModel:
-    def __init__(self, name, sk_model):
-        self.name = name
-        self.skmodel = sk_model
-
-class TrainedModel:
-    def __init__(self, train_set=DataSet, my_sk_model=SkFModel, train_score=float ,test_set=DataSet):
-        self.train_set = train_set
-        self.test_set = test_set
-        self.chosen_model = my_sk_model
-        self.fited_model = None
-        self.train_score = train_score
-        self.test_score = None
-
-    def test_the_model(self):
-        self.test_score = test_the_data(self.test_set.X, self.test_set.Y, self.fited_model)
-        return self.test_score
-
-    def train_model(self):
-        clf = self.chosen_model.skmodel
-        clf.fit(self.train_set.X, self.train_set.Y)
-        self.fited_model = clf
-
-    def save_traind_model_to_file(self,outdir):
-        print('Saving model {} with {} features to file...'.format(self.chosen_model.name,len(self.train_set.feature_list)))
-        filename = '{}_{}_features.sav'.format(self.chosen_model.name,len(self.train_set.feature_list))
-        outdir = os.path.join(outdir,filename)
-        pickle.dump(model, open(outdir, 'wb'))
-        print('File ready here {}'.format(outdir))
-
-def pre_processing(X_set, Y_set ,encoders=None):
-    # Data pre processing
-    # Encoding Categorial features and imputing NaN's
-    # https://chrisalbon.com/machine_learning/preprocessing_structured_data/convert_pandas_categorical_column_into_integers_for_scikit-learn/
-    # http://pbpython.com/categorical-encoding.html
-    # https://datascience.stackexchange.com/questions/14069/mass-convert-categorical-columns-in-pandas-not-one-hot-encoding
-
-    # String categories to int
-    if encoders:
-        for feature, le in encoders.items():
-            if feature in X_set.columns:
-                X_set[feature][pd.isnull(X_set[feature])] = 'NaN'
-                X_set[feature] = le.transform(X_set[feature])
-            elif Y_set.name == feature:
-                Y_set = le.transform(Y_set)
-    else:
-        char_cols = X_set.dtypes.pipe(lambda x: x[x == 'object']).index
-        encoders = {}
-        for feature in char_cols:
-            # https://stackoverflow.com/questions/36808434/label-encoder-encoding-missing-values
-            X_set[feature][pd.isnull(X_set[feature])] = 'NaN'
-            le = preprocessing.LabelEncoder()
-            le.fit(X_set[feature])
-            X_set[feature] = le.transform(X_set[feature])
-            encoders.update({feature:le})
-        # Also for Y set
-        if Y_set.dtype == 'object':
-            le = preprocessing.LabelEncoder()
-            le.fit(Y_set)
-            encoders.update({Y_set.name: le})
-            Y_set = le.transform(Y_set).ravel()
-    #NaN to mean
-
-    # TODO choose the strategy
-    imp = preprocessing.Imputer(axis=0, verbose=1)
-    imp = imp.fit(X_set)
-    X_set = imp.transform(X_set)
-
-    print('Pre processing results: X_set-{} Y_set-{}'.format(X_set.shape, Y_set.shape))
-    return X_set, Y_set , encoders
 
 def get_models_CV_scores(X_train, Y_train, models):
     # Spot Check Algorithms with cross validation
@@ -141,14 +54,6 @@ def get_models_CV_scores(X_train, Y_train, models):
         plt.show()
     return results
 
-def test_the_data(X_test, Y_test, fited_model):
-    # Make predictions on test dataset
-    scores = []
-    scorer = get_scorer(SCORING)
-    score = scorer(fited_model,X_test, Y_test)
-    scores.append(score)
-    return scores
-
 def get_the_best(results):  # input - list of dict {"name":name,"score":score}
     m = max([k["score"] for k in results])
     i = [k["score"] for k in results].index(m)
@@ -164,13 +69,13 @@ if __name__ == "__main__":
     data_sets.append({'X_train': X_train, 'Y_train': Y_train, 'original_headers_train': original_headers_train})
     print('Train data shape: ', X_train.shape)
     print('Train labels shape: ', Y_train.shape)
-    X_train, Y_train ,encoders = pre_processing(X_train, Y_train)
+    X_train, Y_train ,X_encoders,Y_encoder = pre_processing(X_train, Y_train)
     if TEST_FILE:
         X_test, Y_test, original_headers_test = load_dataset(TEST_FILE)
         data_sets.append({'X_test': X_test, 'Y_test': Y_test, 'original_headers_test': original_headers_test})
         print('Test data shape: ', X_test.shape)
         print('Test labels shape: ', Y_test.shape)
-        X_test, Y_test, encoders = pre_processing(X_test, Y_test ,encoders)
+        X_test, Y_test,X_encoders,Y_encoder = pre_processing(X_test, Y_test ,X_encoders,Y_encoder)
 
     #create feature score list
     fs_scores = fs.mutual_info_classif(X_train,Y_train)
@@ -184,11 +89,11 @@ if __name__ == "__main__":
     # create the new datasets according to the feature selection ratio
     new_trains = []
     new_tests = []
+    sel = fs.SelectPercentile(score_func=fs.mutual_info_classif)
+    sel.fit(X_train, Y_train)
     myrange = np.arange(0.01, 1, 0.01)
-    for VTHRESH in myrange:
-        # TODO fit it once and use again and again
-        sel = fs.SelectPercentile(score_func=fs.mutual_info_classif, percentile=VTHRESH * 100)
-        sel.fit(X_train, Y_train)
+    for f_score_threshold in myrange:
+        sel.set_params(percentile=f_score_threshold * 100)
         X_train_mod = sel.transform(X_train)
         if len(new_trains) >= 1:
             if new_trains[-1].ratio == X_train_mod.shape[-1] / X_train.shape[-1]:
@@ -199,9 +104,9 @@ if __name__ == "__main__":
         for ans, feature in zip(mask, original_headers_train):
             if ans:
                 sliced_features.append(feature)
-                if feature in encoders.keys():
-                    sliced_encoders.update({feature:encoders[feature]})
-        new_trains.append(DataSet(X_train_mod,Y_train,sliced_features,sliced_encoders, VTHRESH,
+                if feature in X_encoders.keys():
+                    sliced_encoders.update({feature:X_encoders[feature]})
+        new_trains.append(DataSet(X_train_mod,Y_train,sliced_features,sliced_encoders,Y_encoder, f_score_threshold,
                                   X_train_mod.shape[-1] / X_train.shape[-1],)
                               )
         if TEST_FILE:
@@ -210,10 +115,10 @@ if __name__ == "__main__":
             for ans, feature in zip(mask, original_headers_test):
                 if ans:
                     sliced_features.append(feature)
-                    if feature in encoders.keys():
-                        sliced_encoders.update({feature: encoders[feature]})
+                    if feature in X_encoders.keys():
+                        sliced_encoders.update({feature: X_encoders[feature]})
             X_test_mod = sel.transform(X_test)
-            new_tests.append(DataSet(X_test_mod,Y_test,sliced_features,sliced_encoders, VTHRESH,
+            new_tests.append(DataSet(X_test_mod,Y_test,sliced_features,sliced_encoders,Y_encoder, f_score_threshold,
                                      X_test_mod.shape[-1] / X_test.shape[-1],)
                               )
 
@@ -249,17 +154,20 @@ if __name__ == "__main__":
                                                                                                    best.chosen_model.name,
                                                                                                    best.train_score,
                                                                                                    best.train_set.feature_list))
-    print("**Testing Section:**")
     for trained_model in best_traind_models:
         trained_model.train_model()
-        trained_model.test_the_model()
 
-    sorted_reasultes = sorted(best_traind_models, key=lambda x: x.test_score)
-    for reasulte in sorted_reasultes:
-        print('Testing {} on {} with the model {}'.format(reasulte.train_set.X.shape,
-                                                          reasulte.test_set.X.shape,
-                                                          reasulte.chosen_model.name))
-        print('Score - {}'.format(reasulte.test_score))
+    if TEST_FILE:
+        print("**Testing Section:**")
+        for trained_model in best_traind_models:
+            trained_model.test_the_model(SCORING)
+
+        sorted_reasultes = sorted(best_traind_models, key=lambda x: x.test_score)
+        for reasulte in sorted_reasultes:
+            print('Testing {} on {} with the model {}'.format(reasulte.train_set.X.shape,
+                                                              reasulte.test_set.X.shape,
+                                                              reasulte.chosen_model.name))
+            print('Score - {}'.format(reasulte.test_score))
 
     #save trained model to files
     #https://machinelearningmastery.com/save-load-machine-learning-models-python-scikit-learn/

@@ -1,14 +1,15 @@
 files:
-    train_set: C:/Users/motibz/Documents/Studing/Cancer_Data_Mining/data_sets/02_18_train/02_18_train/best_fixed_train.csv
-#    test_set: C:/Users/motibz/Documents/Studing/Cancer_Data_Mining/data_sets/02_18_train/02_18_train/one_row_test.csv
-    test_set: C:/Users/motibz/Documents/Studing/Cancer_Data_Mining/data_sets/02_18_train/02_18_train/spit_fixed.csv
+#    train_set: C:/Users/motibz/Documents/Studing/Cancer_Data_Mining/data_sets/02_18_train/02_18_train/best_alone.csv
+#    test_set:
+    train_set: C:/Users/motibz/Documents/Studing/Cancer_Data_Mining/data_sets/02_18_train/02_18_train/best_fixed(1).csv
+    test_set: C:/Users/motibz/Documents/Studing/Cancer_Data_Mining/data_sets/02_18_train/02_18_train/spit_fixed(1).csv
 
 #from this list: http://scikit-learn.org/stable/modules/model_evaluation.html
 score: roc_auc
 
 outputs:
-  show_charts: True
-  save_models_agenda: best # all/best/none
+  show_charts: False
+  save_models_agenda: all # all/best/none
   outdir: C:/Users/motibz/Documents/Studing/
 
 #TODO
