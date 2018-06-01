@@ -30,7 +30,6 @@ class DataSet:
         self.Y = Y
         self.Y_encoder = Y_encoding_dict
         self.feature_list = feature_list
-        # self.encoding = encoding_dict # {feature_name: encoder}
         self.threshold = threshold
         self.ratio = ratio
 

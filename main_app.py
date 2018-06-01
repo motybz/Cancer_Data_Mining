@@ -1,5 +1,5 @@
 import os ,yaml,sys
-
+sys.path.append('C:/Users/motibz/Documents/Studing/Cancer_Data_Mining')
 from operator import itemgetter
 from tools.import_data import *
 import matplotlib.pyplot as plt
@@ -78,20 +78,28 @@ if __name__ == "__main__":
         X_test, Y_test,X_encoders,Y_encoder = pre_processing(X_test, Y_test ,X_encoders,Y_encoder)
 
     #create feature score list
-    fs_scores = fs.mutual_info_classif(X_train,Y_train)
-    feature_scores_list = []
-    for i,score in enumerate(fs_scores):
-        feature_scores_list.append({'feature_name':original_headers_train[i],'score':score})
-    feature_scores_list.sort(key=itemgetter('score'),reverse=True)
-    for feature in feature_scores_list:
-        print (feature)
+    #TODO use the same function and rmove zeros
+    # fs_scores = fs.mutual_info_classif(X_train,Y_train)
+    # feature_scores_list = []
+    # for i,score in enumerate(fs_scores):
+    #     feature_scores_list.append({'feature_name':original_headers_train[i],'score':score})
+    # feature_scores_list.sort(key=itemgetter('score'),reverse=True)
+    # for feature in feature_scores_list:
+    #     print (feature)
 
     # create the new datasets according to the feature selection ratio
     new_trains = []
     new_tests = []
     sel = fs.SelectPercentile(score_func=fs.mutual_info_classif)
     sel.fit(X_train, Y_train)
+    feature_scores_list = []
+    for i,score in enumerate(sel.scores_):
+        feature_scores_list.append({'feature_name':original_headers_train[i],'score':score})
+    feature_scores_list.sort(key=itemgetter('score'),reverse=True)
+    for feature in feature_scores_list:
+        print (feature)
     myrange = np.arange(0.01, 1, 0.01)
+    # myrange.[::-1].sort()
     for f_score_threshold in myrange:
         sel.set_params(percentile=f_score_threshold * 100)
         X_train_mod = sel.transform(X_train)
