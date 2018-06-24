@@ -14,7 +14,12 @@ config = yaml.load(open(CONFIG_FILE, 'r'))
 TRAIN_FILE = config['files']['train_set']
 TEST_FILE = config['files']['test_set']
 SCORING = config['score']
-
+OUTPUT = config['outputs']['outdir']
+CV_LOOPS = config['cv_loops']
+if not os.path.exists(OUTPUT):
+    os.makedirs(OUTPUT)
+if config['outputs']['save_stdout']:
+    sys.stdout = open(os.path.join(OUTPUT,'{}_stdout.txt'.format(os.path.basename(TRAIN_FILE))), 'a+')
 # TODO get model by name
 models = []
 
@@ -28,30 +33,37 @@ models.append(('LR', LogisticRegression()))
 
 
 
-def get_models_CV_scores(X_train, Y_train, models):
+def get_models_CV_scores(X_train, Y_train, models,cv_loops):
     # Spot Check Algorithms with cross validation
     # evaluate each model in turn
     scores = []
     names = []
     results = []
     for name, model in models:
-        kfold = model_selection.StratifiedKFold(n_splits=10, shuffle=True)
+        cv_results_colection = None
+        kfold = model_selection.RepeatedStratifiedKFold(n_repeats=cv_loops,n_splits=10)
         try:
             cv_results = model_selection.cross_val_score(model, X_train, Y_train, cv=kfold, n_jobs=-1, scoring=SCORING)
         except ValueError as e:
             print('ValueError{}'.format(None))
         else:
+            # cv_results_colection.extend(cv_results)
             scores.append(cv_results)
             names.append(name)
             results.append({"model": SkFModel(name, model), "score": cv_results.mean()})
     # Compare Algorithms
+    fig = plt.figure()
+    plt.title('Source-{} ,{} Attributes'.format(os.path.basename(TRAIN_FILE),X_train.shape[-1]), fontsize=10)
+    plt.suptitle('Algorithm Comparison',fontsize=16)
+    ax = fig.add_subplot(111)
+    plt.boxplot(scores)
+    ax.set_xticklabels(names)
+    plt.ylabel('Score ({})'.format(SCORING), fontsize=14)
+    if config['outputs']['save_charts']:
+        fig.savefig(os.path.join(OUTPUT,'{}_Algorithm_Comparison.png'.format(X_train.shape[-1])), dpi=1200)
     if config['outputs']['show_charts']:
-        fig = plt.figure()
-        fig.suptitle('Algorithm Comparison')
-        ax = fig.add_subplot(111)
-        plt.boxplot(scores)
-        ax.set_xticklabels(names)
         plt.show()
+    plt.close(fig)
     return results
 
 def get_the_best(results):  # input - list of dict {"name":name,"score":score}
@@ -90,7 +102,8 @@ if __name__ == "__main__":
     # create the new datasets according to the feature selection ratio
     new_trains = []
     new_tests = []
-    sel = fs.SelectPercentile(score_func=fs.mutual_info_classif)
+    # igain = information_gain(X_train, Y_train)
+    sel = fs.SelectPercentile(score_func=fs.f_classif)
     sel.fit(X_train, Y_train)
     feature_scores_list = []
     for i,score in enumerate(sel.scores_):
@@ -134,7 +147,7 @@ if __name__ == "__main__":
     new_models = []
     for i, train_set in enumerate(new_trains):
         print("**Training Section** for: {} features ({})".format(str(train_set.X.shape[-1]),train_set.feature_list))
-        train_results = get_models_CV_scores(train_set.X, train_set.Y, models)
+        train_results = get_models_CV_scores(train_set.X, train_set.Y, models,CV_LOOPS)
         new_models.append({'train_set': train_set, 'train_resultes': train_results})
         if train_results:
             best_tr = get_the_best(train_results)
@@ -150,15 +163,20 @@ if __name__ == "__main__":
 
         for model in train_results:
             print(model['model'].name, model['score'])
+    newfig = plt.figure()
+    plt.plot([d.ratio for d in new_trains],
+             [d.train_score for d in best_traind_models],'--bo')
+    plt.legend()
+    plt.xlabel('Percentage of attributes used', fontsize=14)
+    plt.ylabel('Score ({})'.format(SCORING), fontsize=14)
+    if config['outputs']['save_charts']:
+        newfig.savefig(os.path.join(OUTPUT, 'Features_VS_Score.png'),dpi=1200)
     if config['outputs']['show_charts']:
-        plt.plot([d.ratio for d in new_trains],
-                 [d.train_score for d in best_traind_models])
-        plt.legend()
         plt.show()
-
+    plt.close(newfig)
     sorted_reasultes = sorted(best_traind_models,key=lambda x: x.train_score)
     for best in sorted_reasultes:
-        print("The best model for {} fetures is {} with teht score: {} and the feturaes {}".format(len(best.train_set.feature_list),
+        print("The best model for {} fetures is {} with the score: {} and the feturaes {}".format(len(best.train_set.feature_list),
                                                                                                    best.chosen_model.name,
                                                                                                    best.train_score,
                                                                                                    best.train_set.feature_list))
@@ -181,6 +199,6 @@ if __name__ == "__main__":
     #https://machinelearningmastery.com/save-load-machine-learning-models-python-scikit-learn/
     if config['outputs']['save_models_agenda'] == 'all':
         for model in sorted_reasultes:
-            model.save_traind_model_to_file(config['outputs']['outdir'])
+            model.save_traind_model_to_file(OUTPUT)
     elif config['outputs']['save_models_agenda'] == 'best':
-        sorted_reasultes[-1].save_traind_model_to_file(config['outputs']['outdir'])
+        sorted_reasultes[-1].save_traind_model_to_file(OUTPUT)

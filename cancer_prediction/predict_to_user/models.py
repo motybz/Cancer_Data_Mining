@@ -44,8 +44,8 @@ SINCE_OPTIONS =(
 )
 
 class Entity(models.Model):
-    sym_taking_stomach_meds = models.CharField(max_length=1,choices=YES_NO_OPTIONS,verbose_name='Are you taking stomach meds?',blank=True)
-    sym_yrs_since_acid_taste_start = models.IntegerField(verbose_name="When the acid taste started",choices=SINCE_OPTIONS)
+    sym_taking_stomach_meds = models.CharField(max_length=1,choices=YES_NO_OPTIONS,verbose_name='Are you taking stomach meds?')
+    sym_yrs_since_acid_taste_start = models.IntegerField(verbose_name="When the acid taste started",choices=SINCE_OPTIONS,blank=True)
     # age = models.IntegerField()
     waist_circumference = models.FloatField(blank=True)
     sex = models.CharField(max_length=1,choices=SEX_OPTIONS,blank=True)
