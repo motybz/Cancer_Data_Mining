@@ -8,7 +8,7 @@ DBPS
 ============
 
 DBPS is a Python app for machine learning built on top of
-`scikit-learn<http://scikit-learn.org>`_ (The ML system) and `django<https://docs.djangoproject.com>`_ (The UI prediction system) distributed under the 3-Clause BSD license.
+`scikit-learn <http://scikit-learn.org>`_ (The ML system) and `django <https://docs.djangoproject.com>`_ (The UI prediction system) distributed under the 3-Clause BSD license.
 
 The project was started in 2018 by Mordechai Ben Zecharia, As part of collage final project.
 
@@ -49,12 +49,6 @@ Source code
 You can check the latest sources with the command::
 
     git clone https://github.com/motybz/Data-based_prediction_system.git
-
-Setting up a development environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Quick tutorial on how to go about setting up your environment to
-contribute to scikit-learn: https://github.com/scikit-learn/scikit-learn/blob/master/CONTRIBUTING.md
 
 
 Submitting a Pull Request
