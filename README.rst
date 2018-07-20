@@ -63,13 +63,13 @@ Help and Support
 Documentation
 ~~~~~~~~~~~~~
 Steps:
-1. Install the dependencies (In the "Dependencies" paragraph)
-2. Clone/Download the repository (In the "Source code" paragraph)
-3. You need to set the Config file (config.yml)
-4. execute the model_investigation.py
-5. edit the MODELS_LOCATION = 'C:/Users/motibz/Documents/Studing/' in ./cancer_prediction/predict_to_user/predict_proba.py according to the output folder (from the config.yml)
-6. raise the Django serever (could be run loacly on your machine) - /cancer_prediction/manage.py -runserver ip:port (as appear here: https://docs.djangoproject.com/en/2.0/intro/tutorial01/#the-development-server)
-7. go to http://ip:port/user_form/
+1. Install the dependencies (In the "Dependencies" paragraph).
+|2. Clone/Download the repository (In the "Source code" paragraph).
+3. You need to set the Config file (config.yml).
+4. execute the model_investigation.py .
+5. edit the MODELS_LOCATION = 'C:/Users/motibz/Documents/Studing/' in ./cancer_prediction/predict_to_user/predict_proba.py according to the output folder (from the config.yml).
+6. raise the Django serever (could be run loacly on your machine) - /cancer_prediction/manage.py -runserver ip:port (as appear here: https://docs.djangoproject.com/en/2.0/intro/tutorial01/#the-development-server).
+7. go to http://ip:port/user_form/ .
 8. Have fun!
 
 Communication
