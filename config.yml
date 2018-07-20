@@ -1,23 +1,30 @@
 files:
+    # Here you should put the path to the csv files, if you don't have test set keep the field empty
     train_set: C:/Users/motibz/Documents/Studing/Cancer_Data_Mining/data_sets/02_18_train/02_18_train/spit-50.csv
     test_set:
-#    train_set: C:/Users/motibz/Documents/Studing/Cancer_Data_Mining/data_sets/02_18_train/02_18_train/best_fixed(1).csv
-#    test_set: C:/Users/motibz/Documents/Studing/Cancer_Data_Mining/data_sets/02_18_train/02_18_train/spit_fixed(1).csv
 
-#from this list: http://scikit-learn.org/stable/modules/model_evaluation.html
+#Choose the scoring method (from this list: http://scikit-learn.org/stable/modules/model_evaluation.html)
 score: roc_auc
+
+#The cross validation process works with 10 folds, you can choose the number of the Crose validation process for each data set
 cv_loops: 100
+
+# TODO
 fs_function:
-#score: accuracy
 
 outputs:
+  #Showing the charts during the process
   show_charts: False
+  #Save the charts (image)
   save_charts: True
+  #Save the stduot (for debuging)
   save_stdout: True
-  save_models_agenda: none # all/best/none
+  #Save the traind model binary file (for the UI system)
+  save_models_agenda: all # all/best/none
+  #The out dir for all of the outputs (if not exist will be created)
   outdir: C:/Users/motibz/Documents/Studing/spit-50_f_class_if_auc
 
-#TODO
+#TODO - Not implemented
 # http://scikit-learn.org/stable/tutorial/machine_learning_map/index.html
 models:
   -AdaBoostClassifier
