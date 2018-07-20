@@ -2,7 +2,7 @@ from shared_parameters import *
 import numpy as np
 import glob
 
-MODELS_LOCATION = 'C:/Users/motibz/Documents/Studing/'#LR_7_features.sav'
+MODELS_LOCATION = 'C:/Users/motibz/Documents/Studing/'
 def get_row_len(row):
     length  = 0
     for key, val in row.items():
